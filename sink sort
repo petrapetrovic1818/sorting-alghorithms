@@ -1,0 +1,844 @@
+SOURCE PACKAGES
+
+NAPRAVI DTO
+
+ABSTRACT CLASS
+
+/*
+ * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
+ * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
+ */
+package rs.ac.bg.fon.njt.web.demo.pripr.app.action;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
+
+public abstract class MyAction {
+    public abstract String execute(HttpServletRequest request);
+}
+
+APPCONFIG
+
+
+/*
+ * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
+ * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
+ */
+package rs.ac.bg.fon.njt.web.demo.pripr.app.config;
+
+import org.springframework.context.annotation.Bean;
+import rs.ac.bg.fon.njt.web.demo.pripr.app.action.impl.DodajZadatakAction;
+import rs.ac.bg.fon.njt.web.demo.pripr.app.action.impl.IzmeniAction;
+import rs.ac.bg.fon.njt.web.demo.pripr.app.action.impl.LoginAction;
+import rs.ac.bg.fon.njt.web.demo.pripr.app.action.impl.LogoutAction;
+import rs.ac.bg.fon.njt.web.demo.pripr.app.action.impl.ObrisiAction;
+import rs.ac.bg.fon.njt.web.demo.pripr.app.action.impl.SacuvajIzmenuAction;
+
+
+public class AppConfig {
+
+    public AppConfig() {
+        System.out.println("rs.ac.bg.fon.njt.web.demo.pripr.app.config.AppConfig.<init>()");
+    }
+    
+    @Bean(name = "loginAction")
+    public LoginAction loginAction(){
+        return new LoginAction();
+    }
+    
+    @Bean(name = "logoutAction")
+    public LogoutAction logoutAction(){
+        return new LogoutAction();
+    }
+    
+    @Bean(name = "dodajZadAction")
+    public DodajZadatakAction dodajZadAction(){
+        return new DodajZadatakAction();
+    }
+    
+     @Bean(name = "obrisiAction")
+    public ObrisiAction obrisiAction(){
+        return new ObrisiAction();
+    }
+    
+    @Bean(name = "izmeniAction")
+    public IzmeniAction izmeniAction(){
+        return new IzmeniAction();
+    }
+    
+    @Bean(name = "sacuvajIzmenuAction")
+    public SacuvajIzmenuAction sacuvajIzmenuAction(){
+        return new SacuvajIzmenuAction();
+    }
+    
+}
+
+
+LISTENER
+
+/*
+ * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
+ * Click nbfs://nbhost/SystemFileSystem/Templates/JSP_Servlet/ServletListener.java to edit this template
+ */
+package rs.ac.bg.fon.njt.web.demo.pripr.app.listener;
+
+import jakarta.servlet.ServletContextEvent;
+import jakarta.servlet.ServletContextListener;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.annotation.AnnotationConfigApplicationContext;
+import rs.ac.bg.fon.njt.web.demo.pripr.app.config.AppConfig;
+import rs.ac.bg.fon.njt.web.demo.pripr.app.dto.KorisnikDto;
+import rs.ac.bg.fon.njt.web.demo.pripr.app.dto.ZadatakDto;
+
+
+public class MyAppListener implements ServletContextListener {
+
+    @Override
+    public void contextInitialized(ServletContextEvent sce) {
+        System.out.println("contextInitialized()");
+
+        //za context naknadno
+        ApplicationContext context = new AnnotationConfigApplicationContext(AppConfig.class);
+        sce.getServletContext().setAttribute("context", context);
+        
+        
+        
+        List<KorisnikDto> korisnici = new ArrayList<>() {
+            {
+                List<ZadatakDto> zadaci1 = new ArrayList<>();
+                zadaci1.add(new ZadatakDto(1, "z1", "o1", LocalDateTime.now(), "aktivan"));
+                zadaci1.add(new ZadatakDto(2, "z2", "o2", LocalDateTime.now(), "aktivan"));
+                zadaci1.add(new ZadatakDto(3, "z3", "o3", LocalDateTime.now(), "aktivan"));
+
+                List<ZadatakDto> zadaci2 = new ArrayList<>();
+                zadaci2.add(new ZadatakDto(1, "z4", "o4", LocalDateTime.now(), "aktivan"));
+                zadaci2.add(new ZadatakDto(2, "z5", "o5", LocalDateTime.now(), "aktivan"));
+                zadaci2.add(new ZadatakDto(3, "z6", "o6", LocalDateTime.now(), "aktivan"));
+
+                add(new KorisnikDto("u1", "p1", "Ana", "S", false, zadaci1));
+                add(new KorisnikDto("u2", "p2", "Milica", "K", false, zadaci2));
+                add(new KorisnikDto("u3", "p3", "Pavle", "T", false));
+            }
+        };
+        sce.getServletContext().setAttribute("korisnici", korisnici);
+    }
+
+    @Override
+    public void contextDestroyed(ServletContextEvent sce) {
+        System.out.println("contextDestroyed()");
+    }
+}
+
+ACTIONS
+
+DODAJ ACTION (ADD)
+
+/*
+ * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
+ * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
+ */
+package rs.ac.bg.fon.njt.web.demo.pripr.app.action.impl;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
+import java.time.LocalDateTime;
+import java.util.List;
+import rs.ac.bg.fon.njt.web.demo.pripr.app.action.MyAction;
+import rs.ac.bg.fon.njt.web.demo.pripr.app.dto.KorisnikDto;
+import rs.ac.bg.fon.njt.web.demo.pripr.app.dto.ZadatakDto;
+
+public class DodajZadatakAction extends MyAction {
+
+    @Override
+    public String execute(HttpServletRequest request) {
+
+        HttpSession session = request.getSession();
+        KorisnikDto korisnik = (KorisnikDto) session.getAttribute("loginkorisnik");
+
+        List<ZadatakDto> zadaci = korisnik.getZadaci();
+
+        String naziv = request.getParameter("naziv");
+        String opis = request.getParameter("opis");
+        String status = request.getParameter("status");
+        LocalDateTime datum = LocalDateTime.now();
+        int id = Integer.parseInt(request.getParameter("id"));
+
+        zadaci.add(new ZadatakDto(id, naziv, opis, datum, status));
+
+        return "/WEB-INF/main.jsp";
+    }
+
+}
+
+
+IZMENI ACTION
+
+/*
+ * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
+ * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
+ */
+package rs.ac.bg.fon.njt.web.demo.pripr.app.action.impl;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
+import java.util.List;
+import rs.ac.bg.fon.njt.web.demo.pripr.app.action.MyAction;
+import rs.ac.bg.fon.njt.web.demo.pripr.app.dto.KorisnikDto;
+import rs.ac.bg.fon.njt.web.demo.pripr.app.dto.ZadatakDto;
+
+
+public class IzmeniAction extends MyAction{
+
+    @Override
+    public String execute(HttpServletRequest request) {
+        HttpSession session = request.getSession();
+        KorisnikDto korisnik = (KorisnikDto) session.getAttribute("loginkorisnik");
+        
+        List<ZadatakDto> zadaci = korisnik.getZadaci();
+        ZadatakDto zaIzmenu = null;
+        
+        String parts[] = request.getPathInfo().split("/");
+            int id = Integer.parseInt(parts[parts.length -1]);
+            for (ZadatakDto zad: zadaci) {
+                if(zad.getId() == id){
+                    zaIzmenu = zad;
+                    break;
+                }
+            }
+            request.setAttribute("zad", zaIzmenu);
+            return "/WEB-INF/pages/zadaci/izmeni.jsp";
+        
+        
+    }
+    
+}
+
+
+LOGIN ACTION
+
+/*
+ * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
+ * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
+ */
+package rs.ac.bg.fon.njt.web.demo.pripr.app.action.impl;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
+import java.util.List;
+import rs.ac.bg.fon.njt.web.demo.pripr.app.action.MyAction;
+import rs.ac.bg.fon.njt.web.demo.pripr.app.dto.KorisnikDto;
+
+
+public class LoginAction extends MyAction{
+
+    @Override
+    public String execute(HttpServletRequest request) {
+        String email = request.getParameter("email");
+        String password = request.getParameter("password");
+        String page = "/login.jsp";
+        
+        List<KorisnikDto> korisnici = (List<KorisnikDto>) request.getServletContext().getAttribute("korisnici");
+        
+        for (KorisnikDto korisnikDto : korisnici) {
+            if(korisnikDto.getEmail().equals(email) && korisnikDto.getPassword().equals(password)){
+                HttpSession session = request.getSession(true);
+                korisnikDto.setStatus(true);
+                session.setAttribute("loginkorisnik", korisnikDto);
+                session.setAttribute("brojZadataka", korisnikDto.getZadaci().size());
+                page = "/WEB-INF/main.jsp";
+                break;
+            }
+        }
+        return page;
+        //request.getRequestDispatcher(page).forward(request, response);
+    }
+    
+}
+
+
+LOGOUT ACTION
+
+/*
+ * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
+ * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
+ */
+package rs.ac.bg.fon.njt.web.demo.pripr.app.action.impl;
+
+import jakarta.servlet.http.HttpServletRequest;
+import rs.ac.bg.fon.njt.web.demo.pripr.app.action.MyAction;
+
+
+public class LogoutAction extends MyAction{
+
+    @Override
+    public String execute(HttpServletRequest request) {
+        
+        request.getSession().invalidate();
+        request.setAttribute("message", "Uspesno ste se odjavili!");
+//        request.getRequestDispatcher("/login.jsp").forward(request, response);
+
+        return "/login.jsp";
+    }
+    
+}
+
+
+OBRISI ACTION (DELETE/REMOVE)
+
+/*
+ * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
+ * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
+ */
+package rs.ac.bg.fon.njt.web.demo.pripr.app.action.impl;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
+import java.util.List;
+import rs.ac.bg.fon.njt.web.demo.pripr.app.action.MyAction;
+import rs.ac.bg.fon.njt.web.demo.pripr.app.dto.KorisnikDto;
+import rs.ac.bg.fon.njt.web.demo.pripr.app.dto.ZadatakDto;
+
+
+public class ObrisiAction extends MyAction{
+
+    @Override
+    public String execute(HttpServletRequest request) {
+        
+        HttpSession session = request.getSession();
+        KorisnikDto korisnik = (KorisnikDto) session.getAttribute("loginkorisnik");
+        ZadatakDto zaBrisanje = null;
+        List<ZadatakDto> zadaci = korisnik.getZadaci();
+        
+        String parts[] = request.getPathInfo().split("/");
+            int id = Integer.parseInt(parts[parts.length -1]);
+            for (ZadatakDto zad: zadaci) {
+                if(zad.getId() == id){
+//                    zadaci.remove(zad);
+                    zaBrisanje = zad;
+                    break;
+                }
+            }
+            zadaci.remove(zaBrisanje);
+            return "/WEB-INF/main.jsp";
+        
+    }
+    
+}
+
+SACUVAJ IZMENU ACTION
+
+/*
+ * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
+ * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
+ */
+package rs.ac.bg.fon.njt.web.demo.pripr.app.action.impl;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
+import java.time.LocalDateTime;
+import java.util.List;
+import rs.ac.bg.fon.njt.web.demo.pripr.app.action.MyAction;
+import rs.ac.bg.fon.njt.web.demo.pripr.app.dto.KorisnikDto;
+import rs.ac.bg.fon.njt.web.demo.pripr.app.dto.ZadatakDto;
+
+
+public class SacuvajIzmenuAction extends MyAction {
+
+    @Override
+    public String execute(HttpServletRequest request) {
+
+        HttpSession session = request.getSession();
+        KorisnikDto korisnik = (KorisnikDto) session.getAttribute("loginkorisnik");
+
+        List<ZadatakDto> zadaci = korisnik.getZadaci();
+
+        String naziv = request.getParameter("naziv");
+        String opis = request.getParameter("opis");
+        String status = request.getParameter("status");
+        LocalDateTime datum = LocalDateTime.now();
+        int id = Integer.parseInt(request.getParameter("id"));
+
+        for (ZadatakDto zad : zadaci) {
+            if (zad.getId() == id) {
+                zad.setNaziv(naziv);
+                zad.setOpis(opis);
+                zad.setStatus(status);
+                break;
+            }
+        }
+
+        return  "/WEB-INF/main.jsp";
+    }
+
+}
+
+
+SERVLET SERVLETS
+
+LOGIN SERVLET
+
+/*
+ * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
+ * Click nbfs://nbhost/SystemFileSystem/Templates/JSP_Servlet/Servlet.java to edit this template
+ */
+package rs.ac.bg.fon.njt.web.demo.pripr.app.servlet;
+
+import jakarta.servlet.ServletConfig;
+import java.io.IOException;
+import java.io.PrintWriter;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.annotation.WebServlet;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
+import java.util.List;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
+import rs.ac.bg.fon.njt.web.demo.pripr.app.action.MyAction;
+import rs.ac.bg.fon.njt.web.demo.pripr.app.dto.KorisnikDto;
+
+
+@WebServlet(name = "LoginServlet", urlPatterns = {"/login"})
+public class LoginServlet extends HttpServlet {
+
+    @Autowired
+    private MyAction loginAction;
+
+    /**
+     * Processes requests for both HTTP <code>GET</code> and <code>POST</code>
+     * methods.
+     *
+     * @param request servlet request
+     * @param response servlet response
+     * @throws ServletException if a servlet-specific error occurs
+     * @throws IOException if an I/O error occurs
+     */
+    protected void processRequest(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        response.setContentType("text/html;charset=UTF-8");
+
+//        String email = request.getParameter("email");
+//        String password = request.getParameter("password");
+        String page = "/login.jsp";
+//        
+//        List<KorisnikDto> korisnici = (List<KorisnikDto>) request.getServletContext().getAttribute("korisnici");
+//        
+//        for (KorisnikDto korisnikDto : korisnici) {
+//            if(korisnikDto.getEmail().equals(email) && korisnikDto.getPassword().equals(password)){
+//                HttpSession session = request.getSession(true);
+//                korisnikDto.setStatus(true);
+//                session.setAttribute("loginkorisnik", korisnikDto);
+//                page = "/WEB-INF/main.jsp";
+//                break;
+//            }
+//        }
+//        
+//        request.getRequestDispatcher(page).forward(request, response);
+
+        page = loginAction.execute(request);
+        request.getRequestDispatcher(page).forward(request, response);
+
+    }
+
+    // <editor-fold defaultstate="collapsed" desc="HttpServlet methods. Click on the + sign on the left to edit the code.">
+    /**
+     * Handles the HTTP <code>GET</code> method.
+     *
+     * @param request servlet request
+     * @param response servlet response
+     * @throws ServletException if a servlet-specific error occurs
+     * @throws IOException if an I/O error occurs
+     */
+    @Override
+    protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        processRequest(request, response);
+    }
+
+    /**
+     * Handles the HTTP <code>POST</code> method.
+     *
+     * @param request servlet request
+     * @param response servlet response
+     * @throws ServletException if a servlet-specific error occurs
+     * @throws IOException if an I/O error occurs
+     */
+    @Override
+    protected void doPost(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        processRequest(request, response);
+    }
+
+    /**
+     * Returns a short description of the servlet.
+     *
+     * @return a String containing servlet description
+     */
+    @Override
+    public String getServletInfo() {
+        return "Short description";
+    }// </editor-fold>
+
+    @Override
+    public void init(ServletConfig config) throws ServletException {
+        super.init(config); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/OverriddenMethodBody
+        ApplicationContext context = (ApplicationContext) config.getServletContext().getAttribute("context");
+        context.getAutowireCapableBeanFactory().autowireBean(this);
+
+    }
+
+}
+
+
+LOGOUT SERVLET
+
+/*
+ * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
+ * Click nbfs://nbhost/SystemFileSystem/Templates/JSP_Servlet/Servlet.java to edit this template
+ */
+package rs.ac.bg.fon.njt.web.demo.pripr.app.servlet;
+
+import jakarta.servlet.ServletConfig;
+import java.io.IOException;
+import java.io.PrintWriter;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.annotation.WebServlet;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
+import rs.ac.bg.fon.njt.web.demo.pripr.app.action.MyAction;
+
+
+@WebServlet(name = "LogoutServlet", urlPatterns = {"/logout"})
+public class LogoutServlet extends HttpServlet {
+
+    @Autowired
+    private MyAction logoutAction;
+    
+    /**
+     * Processes requests for both HTTP <code>GET</code> and <code>POST</code>
+     * methods.
+     *
+     * @param request servlet request
+     * @param response servlet response
+     * @throws ServletException if a servlet-specific error occurs
+     * @throws IOException if an I/O error occurs
+     */
+    protected void processRequest(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        response.setContentType("text/html;charset=UTF-8");
+        
+//        request.getSession().invalidate();
+//        request.setAttribute("message", "Uspesno ste se odjavili!");
+//        request.getRequestDispatcher("/login.jsp").forward(request, response);
+        String page = logoutAction.execute(request);
+        request.getRequestDispatcher(page).forward(request, response);
+    }
+
+    // <editor-fold defaultstate="collapsed" desc="HttpServlet methods. Click on the + sign on the left to edit the code.">
+    /**
+     * Handles the HTTP <code>GET</code> method.
+     *
+     * @param request servlet request
+     * @param response servlet response
+     * @throws ServletException if a servlet-specific error occurs
+     * @throws IOException if an I/O error occurs
+     */
+    @Override
+    protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        processRequest(request, response);
+    }
+
+    /**
+     * Handles the HTTP <code>POST</code> method.
+     *
+     * @param request servlet request
+     * @param response servlet response
+     * @throws ServletException if a servlet-specific error occurs
+     * @throws IOException if an I/O error occurs
+     */
+    @Override
+    protected void doPost(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        processRequest(request, response);
+    }
+
+    /**
+     * Returns a short description of the servlet.
+     *
+     * @return a String containing servlet description
+     */
+    @Override
+    public String getServletInfo() {
+        return "Short description";
+    }// </editor-fold>
+
+    @Override
+    public void init(ServletConfig config) throws ServletException {
+        super.init(config); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/OverriddenMethodBody
+        ApplicationContext context = (ApplicationContext) config.getServletContext().getAttribute("context");
+        context.getAutowireCapableBeanFactory().autowireBean(this);
+    }
+
+    
+    
+    
+}
+
+
+ZADACI SERVLET ZADACI SERVLET
+
+/*
+ * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
+ * Click nbfs://nbhost/SystemFileSystem/Templates/JSP_Servlet/Servlet.java to edit this template
+ */
+package rs.ac.bg.fon.njt.web.demo.pripr.app.servlet;
+
+import jakarta.servlet.ServletConfig;
+import java.io.IOException;
+import java.io.PrintWriter;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.annotation.WebServlet;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
+import java.time.LocalDateTime;
+import java.util.List;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.context.ApplicationContext;
+import rs.ac.bg.fon.njt.web.demo.pripr.app.action.MyAction;
+import rs.ac.bg.fon.njt.web.demo.pripr.app.dto.KorisnikDto;
+import rs.ac.bg.fon.njt.web.demo.pripr.app.dto.ZadatakDto;
+
+
+@WebServlet(name = "ZadaciServlet", urlPatterns = {"/zadaci/*"})
+public class ZadaciServlet extends HttpServlet {
+
+    @Autowired
+    @Qualifier("dodajZadAction")
+    private MyAction dodajZadAction;
+
+    @Autowired
+    @Qualifier("obrisiAction")
+    private MyAction obrisiAction;
+
+    @Autowired
+    @Qualifier("izmeniAction")
+    private MyAction izmeniAction;
+
+    @Autowired
+    @Qualifier("sacuvajIzmenuAction")
+    private MyAction sacuvajIzmenuAction;
+
+    /**
+     * Processes requests for both HTTP <code>GET</code> and <code>POST</code>
+     * methods.
+     *
+     * @param request servlet request
+     * @param response servlet response
+     * @throws ServletException if a servlet-specific error occurs
+     * @throws IOException if an I/O error occurs
+     */
+    protected void processRequest(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        response.setContentType("text/html;charset=UTF-8");
+
+        String action = request.getPathInfo();
+        String page = "/WEB-INF/main.jsp";
+
+//        HttpSession session = request.getSession();
+//        KorisnikDto korisnik = (KorisnikDto) session.getAttribute("loginkorisnik");
+//
+//        List<ZadatakDto> zadaci = korisnik.getZadaci();
+//        ZadatakDto zaBrisanje = null;
+//        ZadatakDto zaIzmenu = null;
+
+        if (action.startsWith("/obrisi/")) {
+//            String parts[] = action.split("/");
+//            int id = Integer.parseInt(parts[parts.length -1]);
+//            for (ZadatakDto zad: zadaci) {
+//                if(zad.getId() == id){
+            ////                    zadaci.remove(zad);
+//                    zaBrisanje = zad;
+//                    break;
+//                }
+//            }
+//            zadaci.remove(zaBrisanje);
+//            page = "/WEB-INF/main.jsp";
+              page = obrisiAction.execute(request);
+
+        } else if (action.startsWith("/dodaj")) {
+//            String naziv = request.getParameter("naziv");
+//            String opis = request.getParameter("opis");
+//            String status = request.getParameter("status");
+//            LocalDateTime datum = LocalDateTime.now();
+//            int id = Integer.parseInt(request.getParameter("id"));
+//            
+//            zadaci.add(new ZadatakDto(id, naziv, opis, datum, status));
+//            
+//            page = "/WEB-INF/main.jsp";
+            page = dodajZadAction.execute(request);
+        } else if (action.startsWith("/izmeni/")) {
+//            String parts[] = action.split("/");
+//            int id = Integer.parseInt(parts[parts.length -1]);
+//            for (ZadatakDto zad: zadaci) {
+//                if(zad.getId() == id){
+//                    zaIzmenu = zad;
+//                    break;
+//                }
+//            }
+//            request.setAttribute("zad", zaIzmenu);
+//            page = "/WEB-INF/pages/zadaci/izmeni.jsp";
+            page = izmeniAction.execute(request);
+
+        } else if (action.equals("/sacuvajIzmenu")) {
+
+//            String naziv = request.getParameter("naziv");
+//            String opis = request.getParameter("opis");
+//            String status = request.getParameter("status");
+//            LocalDateTime datum = LocalDateTime.now();
+//            int id = Integer.parseInt(request.getParameter("id"));
+//
+//            for (ZadatakDto zad : zadaci) {
+//                if (zad.getId() == id) {
+//                    zad.setNaziv(naziv);
+//                    zad.setOpis(opis);
+//                    zad.setStatus(status);
+//                    break;
+//                }
+//            }
+//
+//            page = "/WEB-INF/main.jsp";
+            page = sacuvajIzmenuAction.execute(request);
+        }
+
+        request.getRequestDispatcher(page).forward(request, response);
+    }
+
+    // <editor-fold defaultstate="collapsed" desc="HttpServlet methods. Click on the + sign on the left to edit the code.">
+    /**
+     * Handles the HTTP <code>GET</code> method.
+     *
+     * @param request servlet request
+     * @param response servlet response
+     * @throws ServletException if a servlet-specific error occurs
+     * @throws IOException if an I/O error occurs
+     */
+    @Override
+    protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        processRequest(request, response);
+    }
+
+    /**
+     * Handles the HTTP <code>POST</code> method.
+     *
+     * @param request servlet request
+     * @param response servlet response
+     * @throws ServletException if a servlet-specific error occurs
+     * @throws IOException if an I/O error occurs
+     */
+    @Override
+    protected void doPost(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        processRequest(request, response);
+    }
+
+    /**
+     * Returns a short description of the servlet.
+     *
+     * @return a String containing servlet description
+     */
+    @Override
+    public String getServletInfo() {
+        return "Short description";
+    }// </editor-fold>
+
+    @Override
+    public void init(ServletConfig config) throws ServletException {
+        super.init(config); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/OverriddenMethodBody
+        ApplicationContext context = (ApplicationContext) config.getServletContext().getAttribute("context");
+        context.getAutowireCapableBeanFactory().autowireBean(this);
+
+    }
+
+}
+
+
+
+POM
+
+<dependencies>
+        <dependency>
+            <groupId>jakarta.platform</groupId>
+            <artifactId>jakarta.jakartaee-api</artifactId>
+            <version>${jakartaee}</version>
+            <scope>provided</scope>
+        </dependency>
+        
+        <!-- Source: https://mvnrepository.com/artifact/jakarta.servlet.jsp.jstl/jakarta.servlet.jsp.jstl-api -->
+        <dependency>
+            <groupId>jakarta.servlet.jsp.jstl</groupId>
+            <artifactId>jakarta.servlet.jsp.jstl-api</artifactId>
+            <version>3.0.1</version>
+            <scope>compile</scope>
+        </dependency>
+
+
+        <dependency>
+            <groupId>org.glassfish.web</groupId>
+            <artifactId>jakarta.servlet.jsp.jstl</artifactId>
+            <version>3.0.1</version>
+        </dependency>
+        
+        
+        <dependency>
+            <groupId>org.glassfish.jersey.containers</groupId>
+            <artifactId>jersey-container-servlet</artifactId>
+            <version>3.1.3</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.glassfish.jersey.inject</groupId>
+            <artifactId>jersey-hk2</artifactId>
+            <version>3.1.3</version>
+        </dependency>
+        
+        <!-- Source: https://mvnrepository.com/artifact/org.springframework/spring-context -->
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-context</artifactId>
+            <version>7.0.7</version>
+            <scope>compile</scope>
+        </dependency>
+        
+        
+    </dependencies>
+    
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.12.1</version>
+                <configuration>
+                    <source>17</source>
+                    <target>17</target>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-war-plugin</artifactId>
+                <version>3.4.0</version>
+            </plugin>
+        </plugins>
