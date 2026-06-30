@@ -1,0 +1,218 @@
+WEB PAGES
+
+LOGIN
+
+<%-- 
+    Document   : login
+    Created on : Jun 4, 2026, 5:46:40 PM
+    Author     : milicakovacevic
+--%>
+
+<%@page contentType="text/html" pageEncoding="UTF-8"%>
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+        <title>JSP Page</title>
+    </head>
+    <body>
+        <h1>Uloguj se!</h1>
+        
+        <h2>${message}</h2>
+        
+        <form action="/web-demo-pripr/login" method="POST">
+            
+            <label for="email">Email:</label>
+            <input type="text" name="email" value="" />
+            
+            <label for="password">password:</label>
+            <input type="password" name="password" value="" />
+            
+            <input type="submit" value="Prijavi se" />
+            
+        </form>
+        
+    </body>
+</html>
+
+
+MAIN (U WEB-INF)
+
+<%@taglib prefix="c" uri="jakarta.tags.core"%>
+<%-- 
+    Document   : main
+    Created on : Jun 4, 2026, 5:44:38 PM
+    Author     : milicakovacevic
+--%>
+
+<%@page contentType="text/html" pageEncoding="UTF-8"%>
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+        <title>JSP Page</title>
+    </head>
+    <body>
+        <h1>Pocetna strana nakon prijave na sistem!</h1>
+        
+       <jsp:include page="/WEB-INF/pages/fragment/meni.jsp" flush="true"/>
+        
+
+        <div>
+            Dobrodosla, ${loginkorisnik.ime} !
+
+        </div>
+
+        <div>
+            <h2>Prikaz tvojih zadataka</h2>
+                Broj tvojih zadataka: ${brojZadataka}
+
+            <table border="2">
+                <thead>
+                    <tr>
+                        <th>Naziv</th>
+                        <th>Opis</th>
+                        <th>Datum</th>
+                        <th>Status</th>
+                        <th>Dodatne akcije</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <c:forEach var="z" items="${loginkorisnik.zadaci}">
+
+                        <tr>
+                            <td>${z.naziv}</td>
+                            <td>${z.opis}</td>
+                            <td>${z.datum}</td>
+                            <td>${z.status}</td>
+                            <td>
+                                <a href="/web-demo-pripr/zadaci/izmeni/${z.id}">Izmeni</a>
+                                <a href="/web-demo-pripr/zadaci/obrisi/${z.id}">Obrisi</a>
+                            </td>
+                        </tr>
+                    </c:forEach>
+                </tbody>
+            </table>
+
+        </div>
+
+
+
+        <div>
+
+            <h2>Dodaj novi zadatak</h2>
+
+            <form action="/web-demo-pripr/zadaci/dodaj" method="POST">
+
+                <label for="id">Id:</label>
+                <input type="text" name="id" value="" />
+                
+                <label for="naziv">Naziv:</label>
+                <input type="text" name="naziv" value="" />
+
+                <label for="opis">Opis:</label>
+                <input type="text" name="opis" value="" />
+                
+                <label for="status">Status:</label>
+                <input type="text" name="status" value="" />
+
+                <input type="submit" value="Dodaj zadatak" />
+
+            </form>
+
+        </div>
+
+    </body>
+</html>
+
+
+MENI (U WEB-INF/PAGES/FRAGMENT)
+
+<%@taglib prefix="c" uri="jakarta.tags.core"%>
+<%-- 
+    Document   : meni
+    Created on : Jun 4, 2026, 5:47:25?PM
+    Author     : milicakovacevic
+--%>
+
+<div>
+    
+    <h4>Prikaz ulogovanih korisnika:</h4>
+    
+    <table border="2">
+        <thead>
+            <tr>
+                <th>Ime</th>
+                <th>Prezime</th>
+                <th>Email</th>
+                <th>Status</th>
+                
+            </tr>
+        </thead>
+        <tbody>
+            <c:forEach var="k" items="${korisnici}">
+           
+            <tr>
+                <td>${k.ime}</td>
+                <td>${k.prezime}</td>
+                <td>${k.email}</td>
+                <td>${k.status}</td>
+            </tr>
+             </c:forEach>
+        </tbody>
+    </table>
+
+    <a href="/web-demo-pripr/logout">Odjavi se</a>
+    
+    
+</div>
+
+
+IZMENI (WEB-INF/PAGES/ZADACI)
+
+<%-- 
+    Document   : zadaci
+    Created on : Jun 4, 2026, 5:47:38 PM
+    Author     : milicakovacevic
+--%>
+
+<%@page contentType="text/html" pageEncoding="UTF-8"%>
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+        <title>JSP Page</title>
+    </head>
+    <body>
+        <h1>Izmeni odredjeni zadatak!</h1>
+        
+        <form action="/web-demo-pripr/zadaci/sacuvajIzmenu" method="POST">
+            
+                <label for="naziv">Id:</label>
+                <input type="hidden" name="id" value="${zad.id}" />
+                
+                <label for="naziv">Naziv:</label>
+                <input type="text" name="naziv" value="${zad.naziv}" />
+
+                <label for="opis">Opis:</label>
+                <input type="text" name="opis" value="${zad.opis}" />
+                
+                <label for="status">Status:</label>
+                <input type="text" name="status" value="${zad.status}" />
+
+                <input type="submit" value="Izmeni zadatak" />
+
+            </form>
+    </body>
+</html>
+
+
+BEANS.XML (U WEB-INF)
+
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="https://jakarta.ee/xml/ns/jakartaee"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="https://jakarta.ee/xml/ns/jakartaee https://jakarta.ee/xml/ns/jakartaee/beans_4_0.xsd"
+       bean-discovery-mode="all">
+</beans>
+
